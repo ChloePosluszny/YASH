@@ -3,7 +3,13 @@
 #include <stdio.h>
 
 bool parse(char *input) {
-  printf("%s", input);
+  char *tokenizedStr = strtok(input, " "); // grab first word
+
+  while (tokenizedStr != NULL) {
+    //print each word
+    printf("%s\n", tokenizedStr);
+    tokenizedStr = strtok(NULL, " ");
+  }
   return false;
 }
 
