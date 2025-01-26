@@ -2,21 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../include/execute.h"
+#include "../include/common.h"
 #include <stdbool.h>
-
-typedef struct parsed {
-  char **argv;
-  int argc;
-  char *input_file;
-  char *output_file;
-  char *error_file;
-  bool is_bg_job;
-} parsed;
-
-typedef struct rel_process_container {
-  parsed *left_cmd;
-  parsed *right_cmd;
-} rel_process_container;
 
 void free_array_mem(char *array[], int size) {
   for (int i = 0; i < size; i++) {
@@ -30,18 +17,22 @@ void free_parsed_struct(parsed *command) {
   free(command->input_file);
   free(command->output_file);
   free(command->error_file);
-  free(command);
 }
 
 void free_rel_process_container(rel_process_container *container) {
   if (container == NULL) return;
   free_parsed_struct(container->left_cmd);
   free_parsed_struct(container->right_cmd);
-  free(container);
+  free(container); // double check
 }
 
-parsed* parse_command(int argc, char *argv[]) {
+parsed* parse_command(char *argv[]) {
   // parse command for input file, output file, error file, and whether it's a background job
+  int argc = 0;
+  while (argv[argc] != NULL) {
+    argc++;
+  }
+
   char *input_file = NULL;
   char *output_file = NULL;
   char *error_file = NULL;
@@ -83,6 +74,7 @@ parsed* parse_command(int argc, char *argv[]) {
       }
     }
   }
+
   argv[end_of_command] = NULL;
   argc = end_of_command;
 
@@ -101,12 +93,13 @@ parsed* parse_command(int argc, char *argv[]) {
 }
 
 char** parse_by_space(char *input) {
+  // parse command by spaces
   char **argv = malloc(strlen(input) * sizeof(char *)); // command & argument array
   if (argv == NULL) {
     exit(EXIT_FAILURE);
   }
   int argc = 0; // argument count
-  
+
   const char DELIM[] = " "; // seperate by spaces
   char *token_save_ptr;
   char *token = strtok_r(input, DELIM, &token_save_ptr);
@@ -122,29 +115,47 @@ char** parse_by_space(char *input) {
 
     token = strtok_r(NULL, DELIM, &token_save_ptr);
   }
-
   argv = realloc(argv, (argc) * sizeof(char *)); // shrink argv to fit the number of arguments
-  argv[argc] = NULL; // set last element to NULL for execvp
+  if (argv == NULL) {
+    exit(EXIT_FAILURE);
+  }
+
+  argv[argc] = NULL; // set last element to NULL
 
   return argv;
 }
 
-rel_process_container* parse_by_pipe(char *input) {
- return NULL;
+rel_process_container* parse_input(char *input) {
+  // Build container to hold the left and right commands' data
+  rel_process_container *container = malloc(sizeof(rel_process_container));
+  if (container == NULL) {
+    exit(EXIT_FAILURE);
+  }
+
+  char PIPE_DELIM[] = "|";
+  char *token_save_ptr;
+  char *token = strtok_r(input, PIPE_DELIM, &token_save_ptr);
+  
+  // parse for commands on left and right side of pipe
+  char *left_cmd = token;
+  token = strtok_r(NULL, PIPE_DELIM, &token_save_ptr);
+  char *right_cmd = token;
+  
+  if (right_cmd!=NULL) {
+    container->left_cmd = parse_command(parse_by_space(left_cmd));
+    container->right_cmd = parse_command(parse_by_space(right_cmd));
+  } else {
+    container->left_cmd = parse_command(parse_by_space(left_cmd));
+    container->right_cmd = NULL;
+  }
+
+  return container;
 }
 
 void parse(char *input) {
-  //rel_process_container *rel_processes = parse_by_pipe();
+  rel_process_container *rel_processes = parse_input(input);
   
-  int input_size = 0;
-  char ** parsed_input = parse_by_space(input);
-  while (parsed_input[input_size] != NULL) {
-    input_size++;
-  }
+  execute_command(rel_processes);
 
-  parsed *command = parse_command(input_size, parsed_input);
-  
-  execute_command(command->argc, command->argv);
-
-  free_parsed_struct(command);
+  free_rel_process_container(rel_processes);
 }

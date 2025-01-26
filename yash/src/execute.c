@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "../include/common.h"
 
 bool has_pipe(int argc, char *argv[]) {
   for (int i = 0; i < argc; i++) {
@@ -23,8 +24,10 @@ bool has_pipe(int argc, char *argv[]) {
 //   return 0;
 // }
 
-int execute_command(int argc, char *argv[]) {
+int execute_command(rel_process_container *rel_processes) {
   //S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH when using open command
+  char **argv = rel_processes->left_cmd->argv;
+  int argc = rel_processes->left_cmd->argc;
   if (has_pipe(argc, argv)) {
     //handle_pipe(argc, argv);
   }
