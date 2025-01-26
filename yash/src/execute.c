@@ -24,7 +24,7 @@ bool has_pipe(int argc, char *argv[]) {
 // }
 
 int execute_command(int argc, char *argv[]) {
-  const int SUCCESS = 0;
+  //S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH when using open command
 
   if (has_pipe(argc, argv)) {
     //handle_pipe(argc, argv);
@@ -36,7 +36,7 @@ int execute_command(int argc, char *argv[]) {
   cpid = fork(); 
   if (cpid == 0) {
     execvp(argv[0], argv);
-    exit(SUCCESS);
+    exit(EXIT_SUCCESS);
   }
  
   /* Parent reaps children exits */
