@@ -1,19 +1,45 @@
 #include <string.h>
-#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include "../include/execute.h"
 
-bool parse(char *input) {
-  char *tokenizedStr = strtok(input, " "); // grab first word
-
-  while (tokenizedStr != NULL) {
-    //print each word
-    printf("%s\n", tokenizedStr);
-    tokenizedStr = strtok(NULL, " ");
+void free_array_mem(char *array[], int size) {
+  for (int i = 0; i < size; i++) {
+    free(array[i]);
   }
-  return false;
 }
 
-//def isValidCmd
+void parse(char *input) {
+  char **argv = malloc(strlen(input) * sizeof(char *));; // command & argument array
+  if (argv == NULL) {
+    exit(EXIT_FAILURE);
+  }
+  int argc = 0; // argument count
+  
+  const char DELIM[] = " "; // seperate by spaces
+  char *token_save_ptr;
+  char *token = strtok_r(input, DELIM, &token_save_ptr);
+  
+  while (token != NULL) {
+    // print each word of the command separated by spaces
+    argv[argc] = malloc((strlen(token)+1) * sizeof(char));
+    if (argv[argc] == NULL) {
+      exit(EXIT_FAILURE);
+    }
+    strcpy(argv[argc], token);
+    argc++;
 
-//def formatCmd
-/* remove \n from input by replacing with null \0 */
+    token = strtok_r(NULL, DELIM, &token_save_ptr);
+  }
+  argv[argc] = NULL; // set last element of argv is NULL
+  execute_command(argc, argv);
+  free_array_mem(argv, argc);
+}
+
+// void parse_pipe(int argc, char *argv[]) {
+
+// }
+
+// void parse_redirect(int argc,char *argv[]) {
+
+// }
