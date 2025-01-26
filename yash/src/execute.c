@@ -25,7 +25,6 @@ bool has_pipe(int argc, char *argv[]) {
 
 int execute_command(int argc, char *argv[]) {
   //S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH when using open command
-
   if (has_pipe(argc, argv)) {
     //handle_pipe(argc, argv);
   }
@@ -42,11 +41,3 @@ int execute_command(int argc, char *argv[]) {
   /* Parent reaps children exits */
   waitpid(-1,&status, 0); // wait for child to finish may have to edit the -1 and 0 in the future when dealing with bg processes
 }
-
-// int handle_pipe(int argc, char *argv[]) {
-//   return 0;
-// }
-
-// int handle_redirect(int argc, char *argv[]) {
-//   return 0;
-// }

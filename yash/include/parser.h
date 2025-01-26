@@ -21,7 +21,13 @@ void free_array_mem(char *array[], int size);
 
 void free_parsed_struct(parsed *command);
 
-parsed parse_redirect_and_bg(int argc, char *argv[]);
+void free_rel_process_container(rel_process_container *container);
+
+parsed* parse_command(int argc, char *argv[]);
+
+char** parse_by_space(char *input);
+
+rel_process_container* parse_by_pipe(char *input);
 
 void parse(char *input);
 

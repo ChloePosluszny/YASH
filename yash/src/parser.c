@@ -33,8 +33,15 @@ void free_parsed_struct(parsed *command) {
   free(command);
 }
 
-//cat -E < in1.txt > out1.txt
-parsed* parse_redirect_and_bg(int argc, char *argv[]) {
+void free_rel_process_container(rel_process_container *container) {
+  if (container == NULL) return;
+  free_parsed_struct(container->left_cmd);
+  free_parsed_struct(container->right_cmd);
+  free(container);
+}
+
+parsed* parse_command(int argc, char *argv[]) {
+  // parse command for input file, output file, error file, and whether it's a background job
   char *input_file = NULL;
   char *output_file = NULL;
   char *error_file = NULL;
@@ -78,15 +85,6 @@ parsed* parse_redirect_and_bg(int argc, char *argv[]) {
   }
   argv[end_of_command] = NULL;
   argc = end_of_command;
-  
-  for (int i = 0; i < argc; i++) {
-    printf("argv[%d]: %s\n", i, argv[i]);
-  }
-  printf("Input: %s, Output: %s, Error: %s, Background: %d\n",
-         input_file ? input_file : "NULL",
-         output_file ? output_file : "NULL",
-         error_file ? error_file : "NULL",
-         is_bg_job);
 
   parsed *command = malloc(sizeof(parsed));
   if (command == NULL) {
@@ -99,10 +97,10 @@ parsed* parse_redirect_and_bg(int argc, char *argv[]) {
   command->error_file = error_file;
   command->is_bg_job = is_bg_job;
 
-  return command; // TODO FREE EVERYTHING IN PARSED WHEN DONE WITH THE COMMAND
+  return command;
 }
 
-void parse(char *input) {
+char** parse_by_space(char *input) {
   char **argv = malloc(strlen(input) * sizeof(char *)); // command & argument array
   if (argv == NULL) {
     exit(EXIT_FAILURE);
@@ -124,19 +122,29 @@ void parse(char *input) {
 
     token = strtok_r(NULL, DELIM, &token_save_ptr);
   }
-  argv[argc] = NULL; // set last element of argv is NULL
-  
-  parsed *command = parse_redirect_and_bg(argc, argv);
-  
-  execute_command(command->argc, command->argv);
-  
-  free_parsed_struct(command);
+
+  argv = realloc(argv, (argc) * sizeof(char *)); // shrink argv to fit the number of arguments
+  argv[argc] = NULL; // set last element to NULL for execvp
+
+  return argv;
 }
 
-// void parse_pipe(int argc, char *argv[]) {
+rel_process_container* parse_by_pipe(char *input) {
+ return NULL;
+}
 
-// }
+void parse(char *input) {
+  //rel_process_container *rel_processes = parse_by_pipe();
+  
+  int input_size = 0;
+  char ** parsed_input = parse_by_space(input);
+  while (parsed_input[input_size] != NULL) {
+    input_size++;
+  }
 
-// void parse_redirect(int argc,char *argv[]) {
+  parsed *command = parse_command(input_size, parsed_input);
+  
+  execute_command(command->argc, command->argv);
 
-// }
+  free_parsed_struct(command);
+}
