@@ -12,7 +12,7 @@ wc < in1.txt | wc -l
 some_command 2> error_log.txt
 ls | wc
 cat < temp.txt > output.txt 2> error.txt
-cat < in1.txt > out1.txt | cat < in2.txt > out2.txt
+cat < in1.txt > out1.txt | cat < in2.txt > out2.txt <-- seems like output redirects hijack the write end of the pipe and input redirects hijack the read end of the pipe
 echo "hello world" > temp.txt
 cat -E < in1.txt > out1.txt
 */
@@ -26,11 +26,7 @@ int main() {
     if (strlen(cmdInput) == 0) {
       free(cmdInput);
       continue;
-    } 
-    // else if (strcmp(cmdInput, "exit") == 0) {
-    //   free(cmdInput);
-    //   exit(0);
-    // }
+    }
 
     parse(cmdInput);
 

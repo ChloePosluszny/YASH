@@ -8,13 +8,22 @@
 #include <sys/wait.h>
 #include "../include/common.h"
 
-// int handle_pipe(int argc, char *argv[]) {
-//   return 0;
-// }
+void handle_pipe(rel_process_container *rel_processes, char *side, int *pipefd) {
+  bool is_pipe = rel_processes->right_cmd != NULL ? true : false;
+  if (is_pipe) {
+    int read = 0;
+    int write = 1;
+    if (strcmp(side, "left") == 0) {
+      close(pipefd[read]); // close unused read end of pipe
 
-// int handle_redirect(int argc, char *argv[]) {
-//   return 0;
-// }
+      dup2(pipefd[write], STDOUT_FILENO); // hijack output with pipe
+    } else if (strcmp(side, "right") == 0) {
+      close(pipefd[write]); // close unused write end of pipe
+      
+      dup2(pipefd[read], STDIN_FILENO);
+    }
+  }
+}
 
 void handle_redirect(parsed *command) {
   //STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO
@@ -47,7 +56,7 @@ void handle_redirect(parsed *command) {
 }
 
 int execute_command(rel_process_container *rel_processes) {
-  //S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH
+  // execute entire command
   char **argv_left = rel_processes->left_cmd->argv;
   int argc_left = rel_processes->left_cmd->argc;
   char **argv_right = NULL;
@@ -57,8 +66,10 @@ int execute_command(rel_process_container *rel_processes) {
   bool is_bg_job = rel_processes->left_cmd->is_bg_job;
 
   int pipefd[2];
+  pipe(pipefd);
 
   if (is_pipe) {
+    // pipe exists and input/output redirection does not override pipe
     argv_right = rel_processes->right_cmd->argv;
     argc_right = rel_processes->right_cmd->argc;
   }
@@ -66,12 +77,28 @@ int execute_command(rel_process_container *rel_processes) {
   int status;
   pid_t cpid;
 
+  // create child processes
   cpid = fork(); 
   if (cpid == 0) {
     // left child
-    handle_redirect(rel_processes->left_cmd);
+    handle_pipe(rel_processes, "left", pipefd);
+    handle_redirect(rel_processes->left_cmd); // conflicting output/input with write/read ends of pipe favor file redirects
     execvp(argv_left[0], argv_left);
     exit(EXIT_SUCCESS);
   }
+  cpid = fork();
+  if (cpid == 0) {
+    // right child
+    handle_pipe(rel_processes, "right", pipefd);
+    handle_redirect(rel_processes->right_cmd); // conflicting output/input with write/read ends of pipe favor file redirects
+    execvp(argv_right[0], argv_right);
+    exit(EXIT_SUCCESS);
+  }
+
+  close(pipefd[0]);
+  close(pipefd[1]);
+
+  // await child processes to exit parent
   waitpid(-1,&status, 0); // wait for child to finish may have to edit the -1 and 0 in the future when dealing with bg processes
+  waitpid(-1,&status, 0);
 }

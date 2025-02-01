@@ -23,7 +23,6 @@ void free_rel_process_container(rel_process_container *container) {
   if (container == NULL) return;
   free_parsed_struct(container->left_cmd);
   free_parsed_struct(container->right_cmd);
-  free(container); // double check
 }
 
 parsed* parse_command(char *argv[]) {

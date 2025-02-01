@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-// int handle_pipe(int argc, char *argv[])
+void handle_pipe(rel_process_container *rel_processes, char *side, int *pipefd);
 
 void handle_redirect(parsed *command);
 
