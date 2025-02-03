@@ -93,7 +93,7 @@ parsed* parse_command(char *argv[]) {
 
 char** parse_by_space(char *input) {
   // parse command by spaces
-  char **argv = malloc(strlen(input)+1 * sizeof(char *)); // command & argument array
+  char **argv = malloc((strlen(input)+1) * sizeof(char *)); // command & argument array
   if (argv == NULL) {
     exit(EXIT_FAILURE);
   }
@@ -114,7 +114,7 @@ char** parse_by_space(char *input) {
 
     token = strtok_r(NULL, DELIM, &token_save_ptr);
   }
-  argv = realloc(argv, (argc) * sizeof(char *)); // shrink argv to fit the number of arguments
+  argv = realloc(argv, (argc + 1) * sizeof(char *)); // shrink argv to fit the number of arguments
   if (argv == NULL) {
     exit(EXIT_FAILURE);
   }
