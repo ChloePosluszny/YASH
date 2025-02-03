@@ -15,6 +15,15 @@ typedef struct parsed {
 typedef struct rel_process_container {
   parsed *left_cmd;
   parsed *right_cmd;
+  char *cmd;
 } rel_process_container;
+
+typedef struct job_container { //TODO: FREE JOB CONTAINER
+  char *cmd;
+  char **argv;
+  int argc;
+  int job_num;
+  char *status; // Running, Stopped, Done
+} job_container;
 
 #endif

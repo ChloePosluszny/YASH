@@ -8,6 +8,7 @@
 #include "../include/execute.h"
 #include "../include/common.h"
 #include "../include/signal_handlers.h"
+#include "../include/jobs.h"
 /* TESTING COMMANDS
 
 cat in1.txt > out1.txt | cat < in2.txt
@@ -26,13 +27,13 @@ ls > out.txt | sleep 2
 
 //TODO: MAKE ALL CHILD PROCESSES DIE ON EXIT
 
-// void on_exit() {
-//   // terminate all processes
-  
-// }
+void on_exit_function() {
+  // terminate all processes
+  free_jobs_array();
+}
 
 int main() {
-  // atexit(on_exit);
+  atexit(on_exit_function);
 
   signal(SIGINT, handle_SIGINT);
   signal(SIGTSTP, handle_SIGTSTP);

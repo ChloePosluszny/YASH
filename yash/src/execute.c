@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include "../include/common.h"
 #include "../include/signal_handlers.h"
+#include "../include/jobs.h"
 
 void handle_pipe(rel_process_container *rel_processes, char *side, int *pipefd) {
   bool is_pipe = rel_processes->right_cmd != NULL ? true : false;
@@ -72,9 +73,18 @@ int execute_command(rel_process_container *rel_processes) {
   int argc_left = rel_processes->left_cmd->argc;
   char **argv_right = NULL;
   int argc_right = 0;
+  char *cmd = rel_processes->cmd;
+
+  if (is_jobs_cmd(argv_left)) {
+    return 0;
+  }
 
   bool is_pipe = rel_processes->right_cmd != NULL ? true : false;
   bool is_bg_job = rel_processes->left_cmd->is_bg_job;
+
+  if (is_bg_job) {
+    push_job(cmd, argv_left, argc_left, "Running");
+  }
 
   int pipefd[2];
   pipe(pipefd);
