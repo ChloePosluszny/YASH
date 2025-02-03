@@ -93,7 +93,7 @@ parsed* parse_command(char *argv[]) {
 
 char** parse_by_space(char *input) {
   // parse command by spaces
-  char **argv = malloc(strlen(input) * sizeof(char *)); // command & argument array
+  char **argv = malloc(strlen(input)+1 * sizeof(char *)); // command & argument array
   if (argv == NULL) {
     exit(EXIT_FAILURE);
   }

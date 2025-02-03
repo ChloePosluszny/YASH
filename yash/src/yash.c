@@ -20,7 +20,7 @@ cat < temp.txt > output.txt 2> error.txt
 cat < in1.txt > out1.txt | cat < in2.txt > out2.txt
 echo "hello world" > temp.txt
 cat -E < in1.txt > out1.txt
-wc < out.txt | sleep 4 <-- currently broken (realloc invalid pointer)
+wc < out.txt | sleep 4 <-- was broken, now it's fixed (realloc invalid pointer)
 ls > out.txt | sleep 2
 */
 
