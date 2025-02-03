@@ -4,9 +4,11 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "../include/common.h"
+#include "../include/signal_handlers.h"
 
 void handle_pipe(rel_process_container *rel_processes, char *side, int *pipefd) {
   bool is_pipe = rel_processes->right_cmd != NULL ? true : false;
@@ -55,6 +57,15 @@ void handle_redirect(parsed *command) {
   }
 }
 
+void give_console_ctrl(pid_t pgroup) {
+  // provide console ctrl to process group
+  signal(SIGTTOU, SIG_IGN);
+
+  tcsetpgrp(STDIN_FILENO, pgroup);
+  tcsetpgrp(STDOUT_FILENO, pgroup);
+  tcsetpgrp(STDERR_FILENO, pgroup);
+}
+
 int execute_command(rel_process_container *rel_processes) {
   // execute entire command
   char **argv_left = rel_processes->left_cmd->argv;
@@ -75,30 +86,74 @@ int execute_command(rel_process_container *rel_processes) {
   }
 
   int status;
-  pid_t cpid;
+  pid_t ppid = getpid();
+  pid_t lcpid;
+  pid_t rcpid;
 
   // create child processes
-  cpid = fork(); 
-  if (cpid == 0) {
+  lcpid = fork(); 
+  if (lcpid == 0) {
     // left child
+    setpgid(0,0); // create new child process group
+
+    if (!is_bg_job) {
+      // give fg job control of terminal
+      give_console_ctrl(getpgrp());
+    }
+
+    signal(SIGINT, handle_SIGINT);
+    signal(SIGTSTP, handle_SIGTSTP);
+    signal(SIGQUIT, handle_SIGQUIT);
+
     handle_pipe(rel_processes, "left", pipefd);
     handle_redirect(rel_processes->left_cmd); // conflicting output/input with write/read ends of pipe favor file redirects
+    
     execvp(argv_left[0], argv_left);
-    exit(EXIT_SUCCESS);
+    exit(EXIT_FAILURE);
   }
-  cpid = fork();
-  if (cpid == 0) {
+  rcpid = fork();
+  if (rcpid == 0) {
     // right child
+    setpgid(0, lcpid); //join left child's process group
+
+    if (!is_bg_job) {
+      // give fg job control of terminal
+      give_console_ctrl(getpgrp());
+    }
+
+    signal(SIGINT, handle_SIGINT);
+    signal(SIGTSTP, handle_SIGTSTP);
+    signal(SIGQUIT, handle_SIGQUIT);
+    
     handle_pipe(rel_processes, "right", pipefd);
     handle_redirect(rel_processes->right_cmd); // conflicting output/input with write/read ends of pipe favor file redirects
+    
     execvp(argv_right[0], argv_right);
-    exit(EXIT_SUCCESS);
+    exit(EXIT_FAILURE);
+  }
+
+  if (is_bg_job) {
+    // restore terminal ctrl to parent
+    give_console_ctrl(ppid);
   }
 
   close(pipefd[0]);
   close(pipefd[1]);
 
-  // await child processes to exit parent
-  waitpid(-1,&status, 0); // wait for child to finish may have to edit the -1 and 0 in the future when dealing with bg processes
-  waitpid(-1,&status, 0);
+  if (!is_bg_job) {
+    // wait for fg processes
+    waitpid(lcpid, &status, WUNTRACED);
+    if (is_pipe) {
+        waitpid(rcpid, &status, WUNTRACED);
+    }
+
+    // give terminal ctrl back to console
+    give_console_ctrl(ppid);
+  } else {
+    waitpid(lcpid, &status, WCONTINUED | WNOHANG);
+    if (is_pipe) {
+        waitpid(rcpid, &status, WCONTINUED | WNOHANG);
+    }
+  }
+  return status;
 }

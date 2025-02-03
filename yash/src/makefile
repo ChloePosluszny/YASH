@@ -4,10 +4,10 @@ CFLAGS=-I$(IDIR) -lreadline
 
 ODIR=obj
 
-_DEPS = parser.h execute.h
+_DEPS = parser.h execute.h common.h signal_handlers.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = yash.o parser.o execute.o
+_OBJ = yash.o parser.o execute.o signal_handlers.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
