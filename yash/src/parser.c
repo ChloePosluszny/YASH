@@ -150,11 +150,3 @@ rel_process_container* parse_input(char *input) {
 
   return container;
 }
-
-void parse(char *input) {
-  rel_process_container *rel_processes = parse_input(input);
-  
-  execute_command(rel_processes);
-
-  free_rel_process_container(rel_processes);
-}

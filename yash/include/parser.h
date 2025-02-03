@@ -16,6 +16,4 @@ char** parse_by_space(char *input);
 
 rel_process_container* parse_input(char *input);
 
-void parse(char *input);
-
 #endif
