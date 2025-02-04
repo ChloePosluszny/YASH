@@ -155,7 +155,6 @@ job_container* pop_job(job_container ***jobs_list, bool is_FIFO) {
       }
       i++;
     }
-    i-=1;
   }
   *jobs_list = realloc(*jobs_list, (i) * sizeof(job_container *));
   return job;
@@ -201,8 +200,10 @@ void fg() {
   // handle fg command
   job_container *job;
   if ((job = pop_job(&jobs ,false)) == NULL) return; //perform LIFO pop on jobs list to grab last job submitted to bg
-
   give_console_ctrl(job->pgid);
+  
+  signal(SIGCHLD, SIG_DFL);
+  
   kill (-(job->pgid), SIGCONT); // send sigcont signal to process group from top of jobs list 'stack'
 
   // wait for process to exit/terminate or stop
