@@ -91,6 +91,13 @@ int execute_command(rel_process_container *rel_processes) {
     argc_right = rel_processes->right_cmd->argc;
   }
 
+  if (is_bg_job) {
+    signal(SIGCHLD, handle_SIGCHLD);
+  } else {
+    // return base behavior to non bg jobs
+    signal(SIGCHLD, SIG_DFL);
+  }
+
   int status;
   pid_t ppid = getpid();
   pid_t lcpid;
@@ -113,7 +120,7 @@ int execute_command(rel_process_container *rel_processes) {
     signal(SIGQUIT, handle_SIGQUIT);
 
     handle_pipe(rel_processes, "left", pipefd);
-    handle_redirect(rel_processes->left_cmd); // conflicting output/input with write/read ends of pipe favor file redirects
+    handle_redirect(rel_processes->left_cmd);
     
     execvp(argv_left[0], argv_left);
     exit(EXIT_FAILURE);
@@ -143,7 +150,7 @@ int execute_command(rel_process_container *rel_processes) {
   if (is_bg_job) {
     // restore terminal ctrl to parent
     give_console_ctrl(ppid);
-    push_job(cmd, lcpid, argv_left, argc_left, "Running");
+    push_job(&jobs, cmd, lcpid, argv_left, argc_left, -1, "Running");
   }
 
   close(pipefd[0]);
@@ -157,17 +164,11 @@ int execute_command(rel_process_container *rel_processes) {
     }
     if (WIFSTOPPED(status)) {
       // if child process recieves stop signal
-      push_job(cmd, lcpid, argv_left, argc_left, "Stopped");
+      push_job(&jobs, cmd, lcpid, argv_left, argc_left, -1, "Stopped");
     }
 
     // give terminal ctrl back to console
     give_console_ctrl(ppid);
-  } else {
-    // background processes
-    waitpid(lcpid, &status, WCONTINUED | WNOHANG);
-    if (is_pipe) {
-      waitpid(rcpid, &status, WCONTINUED | WNOHANG);
-    }
   }
   return status;
 }

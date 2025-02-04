@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <readline/readline.h>
 #include "../include/parser.h"
 #include "../include/execute.h"
@@ -23,6 +24,7 @@ echo "hello world" > temp.txt
 cat -E < in1.txt > out1.txt
 wc < out.txt | sleep 4 <-- was broken, now it's fixed (realloc invalid pointer)
 ls > out.txt | sleep 2
+ping google.com &
 */
 
 void on_exit_function() {
@@ -32,7 +34,8 @@ void on_exit_function() {
     killpg(jobs[i]->pgid, SIGTERM);
     i++;
   }
-  free_jobs_array();
+  free_jobs_array(&jobs);
+  free_jobs_array(&completed_bg_jobs);
 }
 
 int main() {
@@ -41,12 +44,26 @@ int main() {
   signal(SIGINT, handle_SIGINT);
   signal(SIGTSTP, handle_SIGTSTP);
   signal(SIGQUIT, handle_SIGQUIT);
-  //signal(SIGCHLD, handle_SIGCHLD);
+  signal(SIGCHLD, handle_SIGCHLD);
 
   char *cmdInput;
 
   while (cmdInput = readline("# ")) {
-    // read yash console input
+    // main cmd terminal loop
+    while (completed_bg_jobs != NULL && completed_bg_jobs[0] != NULL) {
+      // print completed jobs on new line character
+      job_container *job = pop_job(&completed_bg_jobs, true); 
+      char *pos_or_neg = job->argc ? "+" : "-";
+
+      printf("[%d]%s\t%s\t\t%s\n", 
+              job->job_num, 
+              pos_or_neg, 
+              job->status, 
+              job->cmd);
+      free_job_container(job);
+    }
+
+    // handle empty command
     if (strlen(cmdInput) == 0) {
       free(cmdInput);
       continue;

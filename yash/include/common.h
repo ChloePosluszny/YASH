@@ -19,7 +19,7 @@ typedef struct rel_process_container {
   char *cmd;
 } rel_process_container;
 
-typedef struct job_container { //TODO: FREE JOB CONTAINER
+typedef struct job_container {
   char *cmd;
   pid_t pgid;
   char **argv;

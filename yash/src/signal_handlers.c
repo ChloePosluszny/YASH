@@ -14,6 +14,7 @@ void handle_SIGINT(int signal) {
   if (fg_pgid != getpgrp()) {
     // fg process group not equal to console's process group
     kill(-fg_pgid, SIGINT);
+    check_bg_jobs();
   } else {
     printf("\n# ");
   }
@@ -36,10 +37,11 @@ void handle_SIGQUIT(int signal) {
   // Handle quit signal
   pid_t fg_pgid = tcgetpgrp(0);
   kill(SIGTERM, fg_pgid);
+  check_bg_jobs();
   kill(SIGTERM, getpgrp());
 }
 
 void handle_SIGCHLD(int signal) {
   // Handle child termination signal
-  check_bg_processes();
+  check_bg_jobs();
 }
