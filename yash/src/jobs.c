@@ -9,6 +9,7 @@
 #include "../include/common.h"
 #include "../include/parser.h"
 #include "../include/execute.h"
+#include "../include/signal_handlers.h"
 
 job_container **jobs = NULL; // Job container type has elements char **argv, int argc, int job_num, and char *status
 job_container **completed_bg_jobs = NULL;
@@ -160,23 +161,6 @@ job_container* pop_job(job_container ***jobs_list, bool is_FIFO) {
   return job;
 }
 
-// char* combine_strings(char *strings[], int size) {
-//   // combine array of strings into single string
-//   int str_length = 0;
-//   for (int i = 0; i < size; i++) {
-//     str_length += strlen(strings[i]);
-//   }
-
-//   char *string = (char *)malloc(str_length + 1);
-//   strcpy(string, "");
-//   for (int i = 0; i < size; i++) {
-//     // concatenate each string to the single string
-//     strcat(string, strings[i]);
-//   }
-
-//   return string;
-// }
-
 void jobs_cmd() {
   int i = 0;
   while (jobs != NULL && jobs[i] != NULL) {
@@ -193,31 +177,46 @@ void jobs_cmd() {
 }
 
 void bg() {
-
+  // handle bg command
+  if (jobs == NULL || jobs[0] == NULL) return;
+  
+  job_container *job = NULL;
+  int i = 0;
+  while (jobs[i] != NULL) {
+    // find most recent stopped job
+    if (strcmp(jobs[i]->status, "Stopped") == 0) {
+      job = jobs[i];
+    }
+    i++;
+  }
+  if (job == NULL) return; // if no job with status Stopped
+  
+  signal(SIGCHLD, handle_SIGCHLD);
+  free(job->status);
+  job->status = strdup("Running");
+  kill (-(job->pgid), SIGCONT);
 }
 
 void fg() {
   // handle fg command
   job_container *job;
-  
-  if ((job = pop_job(&jobs ,false)) != NULL) { //perform LIFO pop on jobs list to grab last job submitted to bg
-    // if jobs list contains any job
-    give_console_ctrl(job->pgid);
-    kill (-(job->pgid), SIGCONT); // send sigcont signal to process group from top of jobs list 'stack'
+  if ((job = pop_job(&jobs ,false)) == NULL) return; //perform LIFO pop on jobs list to grab last job submitted to bg
 
-    // wait for process to exit/terminate or stop
-    int status;
-    waitpid((job->pgid), &status, WUNTRACED);
+  give_console_ctrl(job->pgid);
+  kill (-(job->pgid), SIGCONT); // send sigcont signal to process group from top of jobs list 'stack'
 
-    give_console_ctrl(getpgrp());
+  // wait for process to exit/terminate or stop
+  int status;
+  waitpid((job->pgid), &status, WUNTRACED);
 
-    if (WIFSTOPPED(status)) {
-      // If the job was stopped, put it back in the jobs list
-      push_job(&jobs, job->cmd, job->pgid, job->argv, job->argc, job->job_num, "Stopped");
-    } else {
-      // If the job completed, free the job container
-      free_job_container(job);
-    }
+  give_console_ctrl(getpgrp());
+
+  if (WIFSTOPPED(status)) {
+    // If the job was stopped, put it back in the jobs list
+    push_job(&jobs, job->cmd, job->pgid, job->argv, job->argc, job->job_num, "Stopped");
+  } else {
+    // If the job completed, free the job container
+    free_job_container(job);
   }
 }
 
@@ -228,12 +227,14 @@ bool is_jobs_cmd(char *argv[]) {
   if (argv[1] != NULL) return false;
   
   if (strcmp(cmd, "jobs") == 0) {
+    // jobs command sent
     jobs_cmd();
   } else if (strcmp(cmd, "fg") == 0) {
     // fg command sent
     fg();
   } else if (strcmp(cmd, "bg") == 0) {
-    printf("bg!\n");
+    // bg command sent
+    bg();
   } else {
     return false;
   }

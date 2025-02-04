@@ -24,8 +24,6 @@ void push_job(job_container ***jobs_list, char *cmd, pid_t pgid, char *argv[], i
 
 job_container* pop_job(job_container ***jobs_list, bool is_FIFO);
 
-//char* combine_strings(char *strings[], int size);
-
 void bg();
 
 void fg();

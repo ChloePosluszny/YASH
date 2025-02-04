@@ -27,7 +27,6 @@ ls > out.txt | sleep 2
 ping google.com &
 */
 /*
-TODO: Implement fg and bg commands
 TODO: (Time permitting) reorder complete jobs list by job number
 */
 
