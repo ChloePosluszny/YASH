@@ -26,9 +26,9 @@ job_container* pop_job(job_container ***jobs_list, bool is_FIFO);
 
 //char* combine_strings(char *strings[], int size);
 
-// void bg();
+void bg();
 
-// void fg();
+void fg();
 
 void jobs_cmd();
 

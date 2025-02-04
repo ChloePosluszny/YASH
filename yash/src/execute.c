@@ -65,6 +65,8 @@ void give_console_ctrl(pid_t pgid) {
   tcsetpgrp(STDIN_FILENO, pgid);
   tcsetpgrp(STDOUT_FILENO, pgid);
   tcsetpgrp(STDERR_FILENO, pgid);
+
+  signal(SIGTTOU, SIG_DFL);
 }
 
 int execute_command(rel_process_container *rel_processes) {

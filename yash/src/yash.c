@@ -26,6 +26,10 @@ wc < out.txt | sleep 4 <-- was broken, now it's fixed (realloc invalid pointer)
 ls > out.txt | sleep 2
 ping google.com &
 */
+/*
+TODO: Implement fg and bg commands
+TODO: (Time permitting) reorder complete jobs list by job number
+*/
 
 void on_exit_function() {
   // terminate all processes

@@ -2,12 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include "../include/common.h"
 #include "../include/parser.h"
-#include "../include/execute.h" //TODO: remove?
+#include "../include/execute.h"
 
 job_container **jobs = NULL; // Job container type has elements char **argv, int argc, int job_num, and char *status
 job_container **completed_bg_jobs = NULL;
@@ -191,13 +192,34 @@ void jobs_cmd() {
   }
 }
 
-// void bg() {
+void bg() {
 
-// }
+}
 
-// void fg() {
+void fg() {
+  // handle fg command
+  job_container *job;
+  
+  if ((job = pop_job(&jobs ,false)) != NULL) { //perform LIFO pop on jobs list to grab last job submitted to bg
+    // if jobs list contains any job
+    give_console_ctrl(job->pgid);
+    kill (-(job->pgid), SIGCONT); // send sigcont signal to process group from top of jobs list 'stack'
 
-// }
+    // wait for process to exit/terminate or stop
+    int status;
+    waitpid((job->pgid), &status, WUNTRACED);
+
+    give_console_ctrl(getpgrp());
+
+    if (WIFSTOPPED(status)) {
+      // If the job was stopped, put it back in the jobs list
+      push_job(&jobs, job->cmd, job->pgid, job->argv, job->argc, job->job_num, "Stopped");
+    } else {
+      // If the job completed, free the job container
+      free_job_container(job);
+    }
+  }
+}
 
 bool is_jobs_cmd(char *argv[]) {
   //check if command is a valid jobs cmd (i.e., if argv[0] is fg, bg, or jobs)
@@ -208,7 +230,8 @@ bool is_jobs_cmd(char *argv[]) {
   if (strcmp(cmd, "jobs") == 0) {
     jobs_cmd();
   } else if (strcmp(cmd, "fg") == 0) {
-    printf("fg!\n");
+    // fg command sent
+    fg();
   } else if (strcmp(cmd, "bg") == 0) {
     printf("bg!\n");
   } else {
