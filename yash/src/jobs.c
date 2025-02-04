@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <sys/types.h>
 #include "../include/common.h"
 #include "../include/parser.h"
 
-job_container **jobs; // Job container type has elements char **argv, int argc, int job_num, and char *status
+job_container **jobs = NULL; // Job container type has elements char **argv, int argc, int job_num, and char *status
 
 void free_job_container(job_container *job) {
   if (job == NULL) return;
@@ -37,7 +38,7 @@ char **deep_copy_array(char *array[], int size) {
 
   return copy;
 }
-
+// #include <stdbool.h>
 job_container* peek_job() {
   //read top of jobs stack/list
   if (jobs == NULL || jobs[0] == NULL) return NULL;
@@ -49,15 +50,16 @@ job_container* peek_job() {
   }
 }
 
-void push_job(char *cmd, char *argv[], int argc, char *status) {
+void push_job(char *cmd, pid_t pgid, char *argv[], int argc, char *status) {
   job_container *job = malloc(sizeof(job_container));
   job->cmd = strdup(cmd);
+  job->pgid = pgid;
   job->argv = deep_copy_array(argv, argc);
   job->argc = argc;
   job->status = strdup(status);
   job->job_num = peek_job()!=NULL ? peek_job()->job_num + 1 : 1;
 
-  jobs = realloc(jobs, job->job_num  * sizeof(job_container *));
+  jobs = realloc(jobs, (job->job_num+1)  * sizeof(job_container *));
   jobs[job->job_num] = NULL;
   
   jobs[job->job_num-1] = job;
@@ -99,7 +101,7 @@ job_container* pop_job() {
 
 void jobs_cmd() {
   int i = 0;
-  while (jobs[i] != NULL) {
+  while (jobs != NULL && jobs[i] != NULL) {
     // iterate through jobs array
     char *pos_or_neg = jobs[i+1] == NULL ? "+" : "-";
 
@@ -136,4 +138,8 @@ bool is_jobs_cmd(char *argv[]) {
     return false;
   }
   return true;
+}
+
+void check_bg_processes() {
+  
 }

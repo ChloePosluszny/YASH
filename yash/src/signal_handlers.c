@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <../include/execute.h>
+#include <../include/jobs.h>
 
 void handle_SIGINT(int signal) {
   // Handle interrupt signal
@@ -25,6 +26,7 @@ void handle_SIGTSTP(int signal) {
   if (fg_pgid != getpgrp()) {
     // fg process group not equal to console's process group
     kill(-fg_pgid, SIGTSTP);
+    give_console_ctrl(getpgrp());
   } else {
     printf("\n# ");
   }
@@ -35,4 +37,9 @@ void handle_SIGQUIT(int signal) {
   pid_t fg_pgid = tcgetpgrp(0);
   kill(SIGTERM, fg_pgid);
   kill(SIGTERM, getpgrp());
+}
+
+void handle_SIGCHLD(int signal) {
+  // Handle child termination signal
+  check_bg_processes();
 }

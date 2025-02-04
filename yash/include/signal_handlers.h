@@ -7,4 +7,6 @@ void handle_SIGTSTP(int signal);
 
 void handle_SIGQUIT(int signal);
 
+void handle_SIGCHLD(int signal);
+
 #endif

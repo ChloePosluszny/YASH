@@ -58,13 +58,13 @@ void handle_redirect(parsed *command) {
   }
 }
 
-void give_console_ctrl(pid_t pgroup) {
+void give_console_ctrl(pid_t pgid) {
   // provide console ctrl to process group
   signal(SIGTTOU, SIG_IGN);
 
-  tcsetpgrp(STDIN_FILENO, pgroup);
-  tcsetpgrp(STDOUT_FILENO, pgroup);
-  tcsetpgrp(STDERR_FILENO, pgroup);
+  tcsetpgrp(STDIN_FILENO, pgid);
+  tcsetpgrp(STDOUT_FILENO, pgid);
+  tcsetpgrp(STDERR_FILENO, pgid);
 }
 
 int execute_command(rel_process_container *rel_processes) {
@@ -81,10 +81,6 @@ int execute_command(rel_process_container *rel_processes) {
 
   bool is_pipe = rel_processes->right_cmd != NULL ? true : false;
   bool is_bg_job = rel_processes->left_cmd->is_bg_job;
-
-  if (is_bg_job) {
-    push_job(cmd, argv_left, argc_left, "Running");
-  }
 
   int pipefd[2];
   pipe(pipefd);
@@ -109,6 +105,7 @@ int execute_command(rel_process_container *rel_processes) {
     if (!is_bg_job) {
       // give fg job control of terminal
       give_console_ctrl(getpgrp());
+      signal(SIGCHLD, SIG_DFL);
     }
 
     signal(SIGINT, handle_SIGINT);
@@ -129,10 +126,11 @@ int execute_command(rel_process_container *rel_processes) {
     if (!is_bg_job) {
       // give fg job control of terminal
       give_console_ctrl(getpgrp());
+      signal(SIGCHLD, SIG_DFL);
     }
 
     signal(SIGINT, handle_SIGINT);
-    signal(SIGTSTP, handle_SIGTSTP);
+    signal(SIGTSTP, handle_SIGTSTP); // should also push fg process to jobs list
     signal(SIGQUIT, handle_SIGQUIT);
     
     handle_pipe(rel_processes, "right", pipefd);
@@ -145,6 +143,7 @@ int execute_command(rel_process_container *rel_processes) {
   if (is_bg_job) {
     // restore terminal ctrl to parent
     give_console_ctrl(ppid);
+    push_job(cmd, lcpid, argv_left, argc_left, "Running");
   }
 
   close(pipefd[0]);
@@ -156,13 +155,18 @@ int execute_command(rel_process_container *rel_processes) {
     if (is_pipe) {
         waitpid(rcpid, &status, WUNTRACED);
     }
+    if (WIFSTOPPED(status)) {
+      // if child process recieves stop signal
+      push_job(cmd, lcpid, argv_left, argc_left, "Stopped");
+    }
 
     // give terminal ctrl back to console
     give_console_ctrl(ppid);
   } else {
+    // background processes
     waitpid(lcpid, &status, WCONTINUED | WNOHANG);
     if (is_pipe) {
-        waitpid(rcpid, &status, WCONTINUED | WNOHANG);
+      waitpid(rcpid, &status, WCONTINUED | WNOHANG);
     }
   }
   return status;

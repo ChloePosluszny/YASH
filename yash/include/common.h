@@ -2,6 +2,7 @@
 #define COMMON_H
 
 #include <stdbool.h>
+#include <sys/types.h>
 
 typedef struct parsed {
   char **argv;
@@ -20,6 +21,7 @@ typedef struct rel_process_container {
 
 typedef struct job_container { //TODO: FREE JOB CONTAINER
   char *cmd;
+  pid_t pgid;
   char **argv;
   int argc;
   int job_num;

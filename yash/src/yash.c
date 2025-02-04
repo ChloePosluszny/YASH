@@ -25,10 +25,13 @@ wc < out.txt | sleep 4 <-- was broken, now it's fixed (realloc invalid pointer)
 ls > out.txt | sleep 2
 */
 
-//TODO: MAKE ALL CHILD PROCESSES DIE ON EXIT
-
 void on_exit_function() {
   // terminate all processes
+  int i = 0;
+  while (jobs !=NULL && jobs[i] != NULL) {
+    killpg(jobs[i]->pgid, SIGTERM);
+    i++;
+  }
   free_jobs_array();
 }
 
@@ -38,6 +41,7 @@ int main() {
   signal(SIGINT, handle_SIGINT);
   signal(SIGTSTP, handle_SIGTSTP);
   signal(SIGQUIT, handle_SIGQUIT);
+  //signal(SIGCHLD, handle_SIGCHLD);
 
   char *cmdInput;
 
