@@ -47,16 +47,16 @@ char **deep_copy_array(char *array[], int size) {
 
 job_container* deep_copy_job(job_container *job) {
   if (job != NULL) {
-  job_container *job_copy = malloc(sizeof(job_container));
-  
-  job_copy->cmd = strdup(job->cmd);
-  job_copy->pgid = job->pgid;
-  job_copy->argv = deep_copy_array(job->argv, job->argc);
-  job_copy->argc = job->argc;
-  job_copy->status = strdup(job->status);
-  job_copy->job_num = job->job_num;
-  
-  return job_copy;
+    job_container *job_copy = malloc(sizeof(job_container));
+    
+    job_copy->cmd = strdup(job->cmd);
+    job_copy->pgid = job->pgid;
+    job_copy->argv = deep_copy_array(job->argv, job->argc);
+    job_copy->argc = job->argc;
+    job_copy->status = strdup(job->status);
+    job_copy->job_num = job->job_num;
+    
+    return job_copy;
   } else {
     return NULL;
   }
@@ -144,6 +144,7 @@ job_container* pop_job(job_container ***jobs_list, bool is_FIFO) {
         i++;
       }
       (*jobs_list)[i] = NULL;
+      *jobs_list = realloc(*jobs_list, (i+1) * sizeof(job_container *));
     }
 
   } else {
@@ -155,8 +156,8 @@ job_container* pop_job(job_container ***jobs_list, bool is_FIFO) {
       }
       i++;
     }
+    *jobs_list = realloc(*jobs_list, (i) * sizeof(job_container *));
   }
-  *jobs_list = realloc(*jobs_list, (i) * sizeof(job_container *));
   return job;
 }
 
